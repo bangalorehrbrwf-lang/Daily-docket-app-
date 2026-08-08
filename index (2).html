@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Daily Docket</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#9B5DE5">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Docket">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper: #FFF8ED;
+    --paper-raised: #FFFFFF;
+    --ink: #2A2352;
+    --ink-soft: #6B6394;
+    --line: #E7DFF5;
+    --stamp-red: #FF5C5C;
+    --stamp-green: #1FBF83;
+    --stamp-mustard: #FFA800;
+    --stamp-blue: #3E7CFF;
+    --stamp-purple: #9B5DE5;
+    --stamp-pink: #FF6FA5;
+  }
+  *{ box-sizing: border-box; }
+  body{
+    margin:0;
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', sans-serif;
+    background:
+      radial-gradient(circle at 8% 0%, rgba(255,111,165,0.16), transparent 42%),
+      radial-gradient(circle at 95% 12%, rgba(62,124,255,0.15), transparent 40%),
+      radial-gradient(circle at 50% 100%, rgba(31,191,131,0.14), transparent 45%),
+      var(--paper);
+  }
+  .wrap{ max-width: 720px; margin: 0 auto; padding: 28px 20px 80px; }
+
+  /* Masthead */
+  .masthead{
+    display:flex; justify-content:space-between; align-items:flex-end;
+    border-bottom: 3px solid var(--stamp-purple);
+    padding-bottom: 10px; margin-bottom: 4px;
+  }
+  .masthead h1{
+    font-family:'Special Elite', monospace;
+    font-size: 30px; letter-spacing: 1px; margin:0;
+    text-transform: uppercase;
+    background: linear-gradient(90deg, var(--stamp-purple), var(--stamp-pink) 45%, var(--stamp-blue) 90%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .masthead .meta{
+    text-align:right; font-family:'IBM Plex Mono', monospace;
+    font-size: 12px; color: var(--ink-soft); line-height:1.5;
+  }
+  .subline{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:2px;
+    color: var(--ink-soft); text-transform:uppercase; margin: 6px 0 22px;
+  }
+
+  /* Stats strip */
+  .stats{ display:flex; gap:10px; margin-bottom: 22px; flex-wrap: wrap;}
+  .stat{
+    flex:1; min-width: 110px;
+    border: 1px solid var(--line); border-top: 3px solid var(--stamp-blue);
+    background: var(--paper-raised);
+    padding: 10px 12px; text-align:center;
+    box-shadow: 0 2px 10px rgba(42,35,82,0.06);
+  }
+  .stat .num{ font-family:'Special Elite', monospace; font-size: 22px; }
+  .stat .lbl{ font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:1.5px; color:var(--ink-soft); text-transform:uppercase; margin-top:2px;}
+  .stat.overdue{ border-top-color: var(--stamp-red); }
+  .stat.overdue .num{ color: var(--stamp-red); }
+  .stat.today{ border-top-color: var(--stamp-mustard); }
+  .stat.today .num{ color: var(--stamp-mustard); }
+  .stat.done{ border-top-color: var(--stamp-green); }
+  .stat.done .num{ color: var(--stamp-green); }
+  .stat.followup{ border-top-color: var(--stamp-pink); }
+  .stat.followup .num{ color: var(--stamp-pink); }
+
+
+  /* Form */
+  .logform{
+    border: 1px solid var(--line); border-left: 4px solid var(--stamp-purple);
+    background: var(--paper-raised);
+    padding: 16px; margin-bottom: 26px;
+    box-shadow: 0 2px 10px rgba(42,35,82,0.06);
+  }
+  .logform .row{ display:flex; gap:10px; margin-bottom:10px; flex-wrap: wrap; }
+  .logform .row.top input[type=text]{ flex: 1 1 260px; }
+  .title-input-wrap{ display:flex; gap:8px; }
+  .title-input-wrap input[type=text]{ flex:1; }
+  #btn-mic{
+    flex-shrink:0; width:38px; height:38px; border-radius:50%;
+    border: 1px solid var(--line); background: var(--paper);
+    color: var(--stamp-purple); cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    transition: background 0.15s, color 0.15s, transform 0.15s;
+  }
+  #btn-mic:hover{ background: var(--stamp-purple); color:#fff; }
+  #btn-mic.listening{
+    background: var(--stamp-red); color:#fff; border-color: var(--stamp-red);
+    animation: mic-pulse 1.1s ease-in-out infinite;
+  }
+  @keyframes mic-pulse{
+    0%{ box-shadow: 0 0 0 0 rgba(255,92,92,0.5); }
+    70%{ box-shadow: 0 0 0 10px rgba(255,92,92,0); }
+    100%{ box-shadow: 0 0 0 0 rgba(255,92,92,0); }
+  }
+  .mic-status{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; color: var(--stamp-red);
+    margin-top:5px; min-height:14px;
+  }
+  .field-label{
+    font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:1px;
+    color: var(--ink-soft); text-transform: uppercase; display:block; margin-bottom:3px;
+  }
+  input[type=text], input[type=date], input[type=time], select, textarea{
+    font-family:'IBM Plex Sans', sans-serif; font-size:14px;
+    background: var(--paper); border: 1px solid var(--line); color: var(--ink);
+    padding: 8px 9px; width:100%;
+  }
+  textarea{ resize: vertical; min-height: 40px; }
+  input:focus, select:focus, textarea:focus{ outline: 2px solid var(--stamp-blue); outline-offset: 1px; }
+  .col{ flex: 1 1 140px; }
+  .logform button{
+    font-family:'IBM Plex Mono', monospace; letter-spacing:1px; text-transform:uppercase;
+    font-size:12px; color: #fff; border:none;
+    background: linear-gradient(90deg, var(--stamp-purple), var(--stamp-pink));
+    padding: 10px 18px; cursor:pointer;
+  }
+  .logform button:hover{ filter: brightness(1.08); }
+
+  /* Section headers */
+  .section-head{
+    font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:2px;
+    text-transform:uppercase; color: var(--ink-soft);
+    display:flex; align-items:center; gap:10px; margin: 26px 0 10px;
+  }
+  .section-head::before{ content:'»'; color: var(--stamp-purple); }
+  .section-head::after{ content:''; flex:1; border-top: 1px solid var(--line); }
+  .section-head.overdue{ color: var(--stamp-red); }
+  .section-head.today{ color: var(--stamp-mustard); }
+  .section-head.followup{ color: var(--stamp-pink); }
+
+  /* Task card */
+  .task{
+    border: 1px solid var(--line); border-left: 4px solid var(--stamp-blue);
+    background: var(--paper-raised);
+    padding: 12px 14px; margin-bottom: 8px;
+    display:flex; gap:12px; align-items:flex-start;
+    position: relative;
+    box-shadow: 0 2px 8px rgba(42,35,82,0.05);
+  }
+  .task.done{ opacity:0.6; border-left-color: var(--stamp-green); }
+  .task input[type=checkbox]{ margin-top: 3px; width:16px; height:16px; accent-color: var(--stamp-green); flex-shrink:0; }
+  .task-body{ flex:1; min-width:0; }
+  .task-title{ font-size:15px; font-weight:600; }
+  .task.done .task-title{ text-decoration: line-through; }
+  .task-meta{
+    font-family:'IBM Plex Mono', monospace; font-size:11.5px; color: var(--ink-soft);
+    margin-top:3px; display:flex; gap:10px; flex-wrap:wrap;
+  }
+  .chip{
+    display:inline-block; padding: 1px 7px; border:1px solid var(--line); font-size:10.5px;
+    text-transform:uppercase; letter-spacing:0.5px; font-weight:600;
+  }
+  .chip.high{ border-color: var(--stamp-red); color: var(--stamp-red); background: rgba(255,92,92,0.08); }
+  .chip.medium{ border-color: var(--stamp-mustard); color: var(--stamp-mustard); background: rgba(255,168,0,0.08); }
+  .chip.low{ border-color: var(--stamp-green); color: var(--stamp-green); background: rgba(31,191,131,0.08); }
+  .task-notes{ font-size: 13px; color: var(--ink-soft); margin-top:6px; }
+  .followups{ margin-top:8px; border-left: 2px solid var(--line); padding-left:8px; }
+  .followup-entry{ font-size:12.5px; color: var(--ink-soft); margin-bottom:3px; }
+  .followup-entry b{ color: var(--ink); font-family:'IBM Plex Mono', monospace; font-weight:500; }
+
+  .task-actions{ display:flex; flex-direction:column; gap:6px; align-items:flex-end; }
+  .task-actions button{
+    background:none; border:1px solid var(--line); color: var(--ink-soft);
+    font-family:'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing:0.5px;
+    padding: 4px 8px; cursor:pointer; text-transform:uppercase; white-space:nowrap;
+  }
+  .task-actions button:hover{ border-color: var(--ink); color: var(--ink); }
+  .task-actions button.del:hover{ border-color: var(--stamp-red); color: var(--stamp-red); }
+  .task-actions button.fu-btn{ border-color: var(--stamp-pink); color: var(--stamp-pink); }
+  .task-actions button.fu-btn.active{ background: var(--stamp-pink); color: #fff; }
+
+  /* Stamp */
+  .stamp{
+    position:absolute; top:10px; right:12px;
+    font-family:'Special Elite', monospace; font-size:11px; letter-spacing:1.5px;
+    text-transform:uppercase; padding: 3px 9px;
+    border: 2px solid; border-radius: 3px; transform: rotate(-6deg);
+    opacity:0.85; pointer-events:none;
+  }
+  .stamp.overdue{ color: var(--stamp-red); border-color: var(--stamp-red); }
+  .stamp.today{ color: var(--stamp-mustard); border-color: var(--stamp-mustard); }
+  .stamp.done{ color: var(--stamp-green); border-color: var(--stamp-green); transform: rotate(-4deg); }
+  .stamp.followup{ color: var(--stamp-pink); border-color: var(--stamp-pink); transform: rotate(3deg); }
+
+  .empty{
+    text-align:center; padding: 30px 10px; color: var(--ink-soft);
+    font-family:'IBM Plex Mono', monospace; font-size: 13px; border: 1px dashed var(--line);
+  }
+
+  /* Store visit checklist */
+  .checklist-block{
+    border: 1px solid var(--line); border-top: 4px solid var(--stamp-green);
+    background: var(--paper-raised);
+    margin: 26px 0;
+    box-shadow: 0 2px 10px rgba(42,35,82,0.06);
+  }
+  .checklist-block > summary{
+    list-style: none;
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 12px 16px; margin:0; cursor:pointer;
+    font-family:'Special Elite', monospace; font-size:15px; letter-spacing:1px;
+    text-transform:uppercase; color: var(--ink);
+  }
+  .checklist-block > summary::-webkit-details-marker{ display:none; }
+  .checklist-block > summary::before{ content:'▸ '; color: var(--stamp-green); }
+  .checklist-block[open] > summary::before{ content:'▾ '; color: var(--stamp-green); }
+  .checklist-progress{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; color: var(--ink-soft);
+    text-transform:none; letter-spacing:0;
+  }
+  .checklist-reset-note{
+    font-family:'IBM Plex Mono', monospace; font-size:10.5px; color: var(--ink-soft);
+    padding: 0 16px 10px; margin-top:-4px;
+  }
+  .checklist-body{ padding: 4px 16px 16px; }
+  .checklist-cat{ margin-top: 16px; padding-left: 10px; border-left: 3px solid var(--cat-color, var(--stamp-blue)); }
+  .checklist-cat:first-child{ margin-top: 6px; }
+  .checklist-cat-head{
+    display:flex; justify-content:space-between; align-items:baseline;
+    font-family:'IBM Plex Mono', monospace; font-size:11.5px; letter-spacing:1.5px;
+    text-transform:uppercase; color: var(--cat-color, var(--stamp-blue)); font-weight:600;
+    padding-bottom: 4px; margin-bottom: 6px;
+  }
+  .checklist-items{ display:flex; flex-direction:column; gap:2px; }
+  .checklist-item{
+    display:flex; align-items:center; gap:8px; padding: 5px 2px;
+    font-size: 13.5px; border-bottom: 1px dotted var(--line);
+  }
+  .checklist-item:last-child{ border-bottom:none; }
+  .checklist-item input[type=checkbox]{ width:15px; height:15px; accent-color: var(--cat-color, var(--stamp-green)); flex-shrink:0; }
+  .checklist-item.checked label{ text-decoration: line-through; color: var(--ink-soft); }
+  .checklist-item label{ cursor:pointer; }
+  .checklist-reset-btn{
+    font-family:'IBM Plex Mono', monospace; font-size: 10.5px; text-transform:uppercase;
+    background:none; border:1px solid var(--line); color: var(--ink-soft);
+    padding: 4px 9px; cursor:pointer; letter-spacing:0.5px;
+  }
+  .checklist-reset-btn:hover{ border-color: var(--stamp-red); color: var(--stamp-red); }
+
+  details{ margin-top: 4px; }
+  summary{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--ink-soft);
+    cursor:pointer; letter-spacing:1px; text-transform:uppercase; margin-top:20px;
+  }
+
+  .fu-input-row{ display:flex; gap:6px; margin-top:8px; }
+  .fu-input-row input{ flex:1; font-size:12.5px; padding:6px 8px; }
+  .fu-input-row button{
+    font-family:'IBM Plex Mono', monospace; font-size:10.5px; text-transform:uppercase;
+    background: var(--stamp-blue); color:#fff; border:none; padding:0 12px; cursor:pointer;
+  }
+
+  @media (max-width:480px){
+    .masthead{ flex-direction:column; align-items:flex-start; gap:4px; }
+    .masthead .meta{ text-align:left; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="masthead">
+    <h1>Daily Docket</h1>
+    <div class="meta" id="dateMeta"></div>
+  </div>
+  <div class="subline">a running log of what's due, what's late, and what needs chasing</div>
+  <div id="syncStatus" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--stamp-green);text-align:right;margin:-16px 0 10px;min-height:16px;"></div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="logform">
+    <div class="row top">
+      <div style="flex:1 1 260px;">
+        <span class="field-label">Task</span>
+        <div class="title-input-wrap">
+          <input type="text" id="in-title" placeholder="e.g. Send invoice to client">
+          <button type="button" id="btn-mic" title="Speak your task" aria-label="Speak your task">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              <line x1="12" y1="19" x2="12" y2="23"/>
+              <line x1="8" y1="23" x2="16" y2="23"/>
+            </svg>
+          </button>
+        </div>
+        <div class="mic-status" id="micStatus"></div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col">
+        <span class="field-label">Due date</span>
+        <input type="date" id="in-date">
+      </div>
+      <div class="col">
+        <span class="field-label">Due time</span>
+        <input type="time" id="in-time">
+      </div>
+      <div class="col">
+        <span class="field-label">Priority</span>
+        <select id="in-priority">
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+          <option value="low">Low</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div style="flex:1;">
+        <span class="field-label">Notes (optional)</span>
+        <textarea id="in-notes" placeholder="Any context for later..."></textarea>
+      </div>
+    </div>
+    <button id="btn-add">+ Log task</button>
+    <button type="button" id="btn-test" style="margin-left:10px;background:var(--stamp-blue);font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#fff;border:none;padding:10px 14px;cursor:pointer;">Test Sheet Connection</button>
+  </div>
+
+  <div id="sections"></div>
+
+  <details class="checklist-block" id="checklistBlock" open>
+    <summary>
+      <span>Store Visit Checklist</span>
+      <span class="checklist-progress" id="checklistProgress"></span>
+    </summary>
+    <div class="checklist-reset-note">resets automatically every day — check items off as you go store to store</div>
+    <div class="checklist-body" id="checklistBody"></div>
+  </details>
+
+</div>
+
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+  let tasks = [];
+  let saveTimer = null;
+
+  /* ═══════════════════════════════════════════════════════
+     GOOGLE SHEETS SYNC
+     ═══════════════════════════════════════════════════════ */
+  const SHEET_URL = 'https://script.google.com/macros/s/AKfycbxgvEOJtv-2GjAmx_xBn3uptbQM0iSgpS-2IIxsB-PSyiw2qiOk20l6lEfnsNxH5ruK/exec';
+
+  function syncToSheet(action, payload){
+    if(!SHEET_URL){
+      console.warn('Sheet URL not set');
+      return;
+    }
+    try{
+      const data = JSON.stringify({ action, ...payload });
+      const encoded = encodeURIComponent(data);
+      const url = SHEET_URL + '?data=' + encoded + '&_t=' + Date.now();
+
+      console.log('SYNC URL:', url);
+
+      // Method 1: Image pixel (most reliable for local files)
+      const img = new Image();
+      img.onload = function(){ console.log('✓ Sync OK:', action); setSyncStatus('Synced ✓'); };
+      img.onerror = function(){ console.log('✓ Sync sent (onerror=normal):', action); setSyncStatus('Synced ✓'); };
+      img.src = url;
+
+      // Method 2: Also try fetch as backup
+      fetch(url, { method: 'GET', mode: 'no-cors' }).catch(()=>{});
+
+    }catch(e){
+      console.error('✗ Sheet sync failed:', e);
+      setSyncStatus('Sync failed — see console');
+    }
+  }
+
+  // Test connection on page load
+  function testConnection(){
+    const testUrl = SHEET_URL + '?data=' + encodeURIComponent(JSON.stringify({action:'add',id:'test',title:'CONNECTION TEST',store:'HRBR',due:'',time:'',priority:'medium',notes:'',status:'pending'})) + '&_t=' + Date.now();
+    console.log('TEST URL:', testUrl);
+    const img = new Image();
+    img.src = testUrl;
+    console.log('Test ping sent. Check your sheet for "CONNECTION TEST" row.');
+    setSyncStatus('Test ping sent — check sheet');
+  }
+
+  function setSyncStatus(msg){
+    const el = $('syncStatus');
+    if(el){ el.textContent = msg; setTimeout(()=> el.textContent = '', 4000); }
+  }
+
+  // Unregister old service workers
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.getRegistrations().then(regs => {
+      regs.forEach(r => { r.unregister(); });
+    });
+  }
+
+  const CHECKLIST_DATA = [
+    { cat: 'Meeting', color: 'var(--stamp-blue)', items: [
+      'Sales', 'Sales return', 'GDN / GRN pending', 'T-COM', 'Invoice creation',
+      'NRTV expiry', 'CX outstanding', 'MEQ / lamp', 'Pine Lab / reverse scanning',
+      'Shrinkage', 'Shift closing', 'CCRA', 'Audit on audit'
+    ]},
+    { cat: 'Book', color: 'var(--stamp-purple)', items: [
+      'Amore / BBB', 'Manual bill book', 'GDN / GRN book, shift book', 'TAT book',
+      'Expiry, NRTV, RTV, near expiry'
+    ]},
+    { cat: 'Online', color: 'var(--stamp-pink)', items: [
+      "WhatsApp chat box", "WhatsApp order / T-COM order", 'CX calling', 'Delay order',
+      'Online order / on-time delivery', 'Pine Lab 95% and above', 'Category sale dashboard'
+    ]},
+    { cat: 'Ecogreen', color: 'var(--stamp-green)', items: [
+      'Cycle / random audit', 'Return random', 'Shift closing 3 times', 'Phone pay / card settlement',
+      'General customer', 'Cash receipt', 'ZEDC stock receiving', 'Top 1000 SQS, NAQ report',
+      'Reverse scanning 95% above', 'Zero stock report', 'Non moving', 'Discount',
+      'Local purchase inward check'
+    ]},
+    { cat: 'Process', color: 'var(--stamp-mustard)', items: [
+      'Camera checking', 'Universal location', 'Planogram', 'Rag rag photo', 'Individual target',
+      'Night team task', '3 PM set up and 6 AM set up', 'Staff KPI / KRA, attendance',
+      'Lamp on daily basis', 'Staff on market', 'Offer communication', 'Staff room checking',
+      'Prescription upload'
+    ]}
+  ];
+
+  let checklistState = { date: '', checked: {} };
+  let checklistSaveTimer = null;
+
+  function todayStr(){
+    const d = new Date();
+    return d.toISOString().slice(0,10);
+  }
+
+  function fmtDateHuman(iso){
+    if(!iso) return '';
+    const [y,m,d] = iso.split('-').map(Number);
+    const dt = new Date(y, m-1, d);
+    return dt.toLocaleDateString(undefined, { weekday:'short', month:'short', day:'numeric' });
+  }
+
+  function dueTimestamp(t){
+    if(!t.due) return Infinity;
+    return new Date(t.due + 'T' + (t.time || '23:59')).getTime();
+  }
+
+  function classify(t){
+    if(t.status === 'done') return 'done';
+    if(!t.due) return t.needsFollowUp ? 'followup' : 'upcoming';
+    const now = new Date();
+    const dueDT = new Date(t.due + 'T' + (t.time || '23:59'));
+    if(t.due < todayStr()) return 'overdue';
+    if(t.due === todayStr()){
+      if(t.time && dueDT.getTime() < now.getTime()) return 'overdue';
+      return 'today';
+    }
+    return t.needsFollowUp ? 'followup' : 'upcoming';
+  }
+
+  async function loadTasks(){
+    try{
+      const raw = localStorage.getItem('dd_tasks');
+      tasks = raw ? JSON.parse(raw) : [];
+    }catch(e){
+      tasks = [];
+    }
+    render();
+  }
+
+  function queueSave(){
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(()=>{
+      try{
+        localStorage.setItem('dd_tasks', JSON.stringify(tasks));
+      }catch(e){
+        console.error('save failed', e);
+      }
+    }, 250);
+  }
+
+  function addTask(){
+    const title = $('in-title').value.trim();
+    if(!title) return;
+    const t = {
+      id: 't' + Date.now() + Math.random().toString(36).slice(2,7),
+      title,
+      due: $('in-date').value || null,
+      time: $('in-time').value || null,
+      priority: $('in-priority').value,
+      store: 'HRBR',
+      notes: $('in-notes').value.trim(),
+      status: 'pending',
+      needsFollowUp: false,
+      followUps: [],
+      createdAt: Date.now()
+    };
+    tasks.unshift(t);
+    syncToSheet('add', { id: t.id, title: t.title, store: t.store, due: t.due, time: t.time, priority: t.priority, notes: t.notes, status: t.status });
+    $('in-title').value = '';
+    $('in-date').value = '';
+    $('in-time').value = '';
+    $('in-notes').value = '';
+    $('in-priority').value = 'medium';
+
+    queueSave();
+    render();
+  }
+
+  function toggleDone(id){
+    const t = tasks.find(x=>x.id===id);
+    if(!t) return;
+    t.status = t.status === 'done' ? 'pending' : 'done';
+    syncToSheet('update', { id: id, status: t.status });
+    queueSave();
+    render();
+  }
+
+  function deleteTask(id){
+    tasks = tasks.filter(x=>x.id!==id);
+    syncToSheet('delete', { id: id });
+    queueSave();
+    render();
+  }
+
+  function toggleFollowUp(id){
+    const t = tasks.find(x=>x.id===id);
+    if(!t) return;
+    t.needsFollowUp = !t.needsFollowUp;
+    syncToSheet('update', { id: id, needsFollowUp: t.needsFollowUp });
+    queueSave();
+    render();
+  }
+
+  function addFollowUp(id, note){
+    if(!note.trim()) return;
+    const t = tasks.find(x=>x.id===id);
+    if(!t) return;
+    t.followUps.push({ date: new Date().toLocaleDateString(undefined,{month:'short', day:'numeric'}), note: note.trim() });
+    queueSave();
+    render();
+  }
+
+  function taskCard(t){
+    const cls = classify(t);
+    const stampMap = { overdue:'Overdue', today:'Due Today', done:'Done', followup:'Follow-up' };
+    const stamp = stampMap[cls] ? `<div class="stamp ${cls}">${stampMap[cls]}</div>` : '';
+    const dueLabel = t.due ? `${fmtDateHuman(t.due)}${t.time ? ' · ' + t.time : ''}` : 'no due date';
+    const followUpsHtml = t.followUps.length ? `
+      <div class="followups">
+        ${t.followUps.map(f=>`<div class="followup-entry"><b>${f.date}</b> — ${escapeHtml(f.note)}</div>`).join('')}
+      </div>` : '';
+    return `
+      <div class="task ${t.status==='done'?'done':''}" data-id="${t.id}">
+        <input type="checkbox" ${t.status==='done'?'checked':''} onclick="App.toggleDone('${t.id}')">
+        <div class="task-body">
+          <div class="task-title">${escapeHtml(t.title)}</div>
+          <div class="task-meta">
+            <span>${dueLabel}</span>
+            <span class="chip ${t.priority}">${t.priority}</span>
+            ${t.store ? `<span class="chip" style="border-color:var(--stamp-purple);color:var(--stamp-purple);background:rgba(155,93,229,0.08);">${escapeHtml(t.store)}</span>` : ''}
+          </div>
+          ${t.notes ? `<div class="task-notes">${escapeHtml(t.notes)}</div>` : ''}
+          ${followUpsHtml}
+          <details>
+            <summary>+ add follow-up note</summary>
+            <div class="fu-input-row">
+              <input type="text" placeholder="What happened / next step..." id="fu-${t.id}">
+              <button onclick="App.submitFollowUp('${t.id}')">Add</button>
+            </div>
+          </details>
+        </div>
+        <div class="task-actions">
+          <button onclick="App.speakTask('${t.id}')" title="Read aloud">🔊 Speak</button>
+          <button class="fu-btn ${t.needsFollowUp?'active':''}" onclick="App.toggleFollowUp('${t.id}')" title="Toggle follow-up">📌 Follow-up</button>
+          <button class="del" onclick="App.deleteTask('${t.id}')">Delete</button>
+        </div>
+        ${stamp}
+      </div>
+    `;
+  }
+
+  function escapeHtml(s){
+    return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function render(){
+    $('dateMeta').innerHTML = new Date().toLocaleDateString(undefined,{weekday:'long', year:'numeric', month:'long', day:'numeric'});
+
+    const groups = { overdue:[], today:[], followup:[], upcoming:[], done:[] };
+    tasks.forEach(t => groups[classify(t)].push(t));
+
+    Object.values(groups).forEach(g => g.sort((a,b)=> dueTimestamp(a)-dueTimestamp(b)));
+
+    const pendingCount = tasks.filter(t=>t.status!=='done').length;
+    const doneToday = tasks.filter(t=>t.status==='done').length;
+
+    const followUpCount = tasks.filter(t=>t.needsFollowUp && t.status!=='done').length;
+    $('stats').innerHTML = `
+      <div class="stat overdue"><div class="num">${groups.overdue.length}</div><div class="lbl">Overdue</div></div>
+      <div class="stat today"><div class="num">${groups.today.length}</div><div class="lbl">Due Today</div></div>
+      <div class="stat followup"><div class="num">${followUpCount}</div><div class="lbl">Follow-up</div></div>
+      <div class="stat"><div class="num">${pendingCount}</div><div class="lbl">Pending</div></div>
+      <div class="stat done"><div class="num">${doneToday}</div><div class="lbl">Done</div></div>
+    `;
+
+    let html = '';
+    if(groups.followup.length){
+      html += `<div class="section-head followup">📌 Follow-up Needed</div>` + groups.followup.map(taskCard).join('');
+    }
+    if(groups.overdue.length){
+      html += `<div class="section-head overdue">Overdue</div>` + groups.overdue.map(taskCard).join('');
+    }
+    if(groups.today.length){
+      html += `<div class="section-head today">Due Today</div>` + groups.today.map(taskCard).join('');
+    }
+    if(groups.upcoming.length){
+      html += `<div class="section-head">Upcoming</div>` + groups.upcoming.map(taskCard).join('');
+    }
+    if(!groups.overdue.length && !groups.today.length && !groups.followup.length && !groups.upcoming.length && !groups.done.length){
+      html = `<div class="empty">Nothing logged yet. Add your first task above.</div>`;
+    }
+    if(groups.done.length){
+      html += `<details><summary>Done (${groups.done.length})</summary>${groups.done.map(taskCard).join('')}</details>`;
+    }
+
+    $('sections').innerHTML = html;
+  }
+
+  function itemId(cat, item){
+    return (cat + '__' + item).replace(/\s+/g,'_').toLowerCase();
+  }
+
+  async function loadChecklist(){
+    try{
+      const raw = localStorage.getItem('dd_checklist');
+      checklistState = raw ? JSON.parse(raw) : { date: '', checked: {} };
+    }catch(e){
+      checklistState = { date: '', checked: {} };
+    }
+    if(checklistState.date !== todayStr()){
+      checklistState = { date: todayStr(), checked: {} };
+      queueChecklistSave();
+    }
+    renderChecklist();
+  }
+
+  function queueChecklistSave(){
+    clearTimeout(checklistSaveTimer);
+    checklistSaveTimer = setTimeout(()=>{
+      try{
+        localStorage.setItem('dd_checklist', JSON.stringify(checklistState));
+      }catch(e){
+        console.error('checklist save failed', e);
+      }
+    }, 250);
+  }
+
+  function toggleChecklistItem(id){
+    checklistState.checked[id] = !checklistState.checked[id];
+    queueChecklistSave();
+    renderChecklist();
+  }
+
+  function resetChecklist(){
+    checklistState = { date: todayStr(), checked: {} };
+    queueChecklistSave();
+    renderChecklist();
+  }
+
+  function renderChecklist(){
+    let totalItems = 0, totalChecked = 0;
+    const body = CHECKLIST_DATA.map(group => {
+      const rows = group.items.map(item => {
+        const id = itemId(group.cat, item);
+        const checked = !!checklistState.checked[id];
+        totalItems++;
+        if(checked) totalChecked++;
+        return `
+          <div class="checklist-item ${checked ? 'checked' : ''}">
+            <input type="checkbox" id="ci-${id}" ${checked ? 'checked' : ''} onclick="App.toggleChecklistItem('${id}')">
+            <label for="ci-${id}">${escapeHtml(item)}</label>
+          </div>`;
+      }).join('');
+      return `
+        <div class="checklist-cat" style="--cat-color:${group.color}">
+          <div class="checklist-cat-head"><span>${escapeHtml(group.cat)}</span></div>
+          <div class="checklist-items">${rows}</div>
+        </div>`;
+    }).join('') + `
+      <div style="margin-top:14px; text-align:right;">
+        <button class="checklist-reset-btn" onclick="App.resetChecklist()">Reset today's checklist</button>
+      </div>`;
+
+    $('checklistBody').innerHTML = body;
+    $('checklistProgress').textContent = `${totalChecked} / ${totalItems} done today`;
+  }
+
+  window.App = {
+    toggleDone: toggleDone,
+    deleteTask: deleteTask,
+    toggleFollowUp: toggleFollowUp,
+    submitFollowUp: function(id){
+      const el = $('fu-' + id);
+      if(el) { addFollowUp(id, el.value); el.value = ''; }
+    },
+    toggleChecklistItem: toggleChecklistItem,
+    resetChecklist: resetChecklist,
+    speakTask: function(id){
+      const t = tasks.find(x=>x.id===id);
+      if(!t) return;
+      const text = [t.title, t.store ? 'at ' + t.store : '', t.due ? 'due on ' + fmtDateHuman(t.due) : '', t.time ? 'at ' + t.time : '', t.notes].filter(Boolean).join('. ');
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = 'en-IN';
+      utter.rate = 1;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utter);
+    }
+  };
+
+  $('btn-add').addEventListener('click', addTask);
+  $('btn-test').addEventListener('click', testConnection);
+  $('in-title').addEventListener('keydown', (e)=>{ if(e.key === 'Enter') addTask(); });
+
+  // Voice input: speak a task and it gets added automatically
+  (function setupVoice(){
+    const micBtn = $('btn-mic');
+    const status = $('micStatus');
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if(!SR){
+      micBtn.style.display = 'none';
+      return;
+    }
+
+    const recognition = new SR();
+    recognition.lang = 'en-IN';
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+    let listening = false;
+
+    recognition.onstart = () => {
+      listening = true;
+      micBtn.classList.add('listening');
+      status.textContent = 'Listening… speak your task';
+    };
+
+    recognition.onresult = (event) => {
+      let transcript = '';
+      for(let i = 0; i < event.results.length; i++){
+        transcript += event.results[i][0].transcript;
+      }
+      $('in-title').value = transcript;
+      if(event.results[event.results.length - 1].isFinal){
+        status.textContent = 'Added: "' + transcript.trim() + '"';
+        addTask();
+      }
+    };
+
+    recognition.onerror = (event) => {
+      if(event.error === 'not-allowed' || event.error === 'permission-denied'){
+        status.textContent = 'Microphone permission denied';
+      }else if(event.error === 'no-speech'){
+        status.textContent = 'Didn\'t catch that — try again';
+      }else{
+        status.textContent = 'Voice input error: ' + event.error;
+      }
+    };
+
+    recognition.onend = () => {
+      listening = false;
+      micBtn.classList.remove('listening');
+      setTimeout(() => { if(!listening) status.textContent = ''; }, 2500);
+    };
+
+    micBtn.addEventListener('click', () => {
+      if(listening){
+        recognition.stop();
+      }else{
+        status.textContent = '';
+        try{ recognition.start(); }
+        catch(e){ /* already started */ }
+      }
+    });
+  })();
+
+  loadTasks();
+  loadChecklist();
+
+  // Service worker disabled for local file use
+})();
+</script>
+</body>
+</html>
